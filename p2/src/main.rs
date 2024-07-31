@@ -1,20 +1,21 @@
-use std::io::{self, Read};
+use std::io::Read;
+use std::fs::File;
+use std::env;
 
 const NUM_STR: [&str; 9] = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
 
-
-fn strnum_to_num(text: &String) -> String {
-    let mut new_text = text.clone();
+fn strnum_to_num(text: String) -> String {
+    let new_text = text.clone();
     let mut pairs: Vec<(u8, usize)> = Vec::new();
     for (i, numstr) in Vec::from(NUM_STR).iter().enumerate() {
-        pairs.push(((i + 1) as u8, new_text.find(numstr).unwrap()));
+        pairs.push(((i + 1) as u8, new_text.find(numstr)));
     }
-    println!("{}", new_text);
+    println!("{:?}", pairs);
     new_text
 }
 
 fn do_the_thing(src: &str) -> u32 {
-    let new_text = strnum_to_num(&src.to_string());
+    let new_text = strnum_to_num(src.to_string());
     let lines: Vec<&str> = new_text.split('\n').collect();
     let mut digits: Vec<u32> = vec![];
     for line in lines {
@@ -35,10 +36,11 @@ fn do_the_thing(src: &str) -> u32 {
     digits.iter().sum()
 }
 
-fn main() {
-    let ra = 0..3;
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).ok();
-    let res = do_the_thing(input.as_str());
+fn main() -> std::io::Result<()> {
+    let mut file = File::open("src/sample.txt")?;
+    let mut src = String::new(); 
+    file.read_to_string(&mut src)?;
+    let res = do_the_thing(&src);
     println!("{}", res);
+    Ok(())
 }
