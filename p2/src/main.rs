@@ -1,37 +1,49 @@
 use std::io::Read;
 use std::fs::File;
-use std::env;
 
 const NUM_STR: [&str; 9] = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
 
-fn strnum_to_num(text: String) -> String {
-    let new_text = text.clone();
-    let mut pairs: Vec<(u8, usize)> = Vec::new();
-    for (i, numstr) in Vec::from(NUM_STR).iter().enumerate() {
-        pairs.push(((i + 1) as u8, new_text.find(numstr)));
+
+// fdvaseoneightoas 18
+// fdvaseoneightoas 18
+// ^     ^
+
+fn evaluate_line(line: &str) -> u32 {
+    if line.len() == 0 {
+        return 0;
     }
-    println!("{:?}", pairs);
-    new_text
+    let mut nums: Vec<(usize, u32)> = vec![];
+    for i in 0..NUM_STR.len() {
+        line.match_indices(NUM_STR[i]).for_each(|(idx, _)| {
+            nums.push((idx, i as u32 + 1));
+        });
+    }
+    let iter = line.chars().peekable();
+    for (i, c) in iter.enumerate() {
+        if c.is_digit(10) {
+            nums.push((i, c.to_digit(10).unwrap() as u32));
+        }
+    }
+
+    if nums.len() == 0 {
+        return 0;
+    }
+
+    nums.sort_by(|a, b| a.0.cmp(&b.0));
+    let res = nums[0].1*10 + nums.last().unwrap().1;
+    println!("src: {:?}", line);
+    println!("nums: {:?}", nums);
+    println!("res: {:?}", res);
+    res
 }
 
 fn do_the_thing(src: &str) -> u32 {
-    let new_text = strnum_to_num(src.to_string());
+    let new_text = src;
     let lines: Vec<&str> = new_text.split('\n').collect();
     let mut digits: Vec<u32> = vec![];
     for line in lines {
-        let first = match line.chars().find_map(|c| c.to_digit(10)) {
-            Some(digit) => digit,
-            None => {
-                continue;
-            }
-        };
-        let second = match line.chars().rev().find_map(|c| c.to_digit(10)) {
-            Some(digit) => digit,
-            None => {
-                continue;
-            }
-        };
-        digits.push(first * 10 + second);
+        let res = evaluate_line(line);
+        digits.push(res);
     }
     digits.iter().sum()
 }
