@@ -1,58 +1,104 @@
-use std::io::Read;
 use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
+use std::vec::Vec;
 
-const NUM_STR: [&str; 9] = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+#[derive(Debug)]
+enum Color {
+    Red(u32),
+    Green(u32),
+    Blue(u32),
+}
 
-
-// fdvaseoneightoas 18
-// fdvaseoneightoas 18
-// ^     ^
-
-fn evaluate_line(line: &str) -> u32 {
-    if line.len() == 0 {
-        return 0;
-    }
-    let mut nums: Vec<(usize, u32)> = vec![];
-    for i in 0..NUM_STR.len() {
-        line.match_indices(NUM_STR[i]).for_each(|(idx, _)| {
-            nums.push((idx, i as u32 + 1));
-        });
-    }
-    let iter = line.chars().peekable();
-    for (i, c) in iter.enumerate() {
+fn extract_beads(text: &str) -> Option<Color> {
+    let mut num = 0;
+    let mut color_str = String::new();
+    text.chars().into_iter().for_each(|c| {
         if c.is_digit(10) {
-            nums.push((i, c.to_digit(10).unwrap() as u32));
+            num = num * 10 + c.to_digit(10).unwrap();
+        } else {
+            color_str.push(c);
         }
+    });
+    match color_str.trim().to_lowercase().as_str() {
+        "red" => return Some(Color::Red(num)),
+        "green" => return Some(Color::Green(num)),
+        "blue" => return Some(Color::Blue(num)),
+        _ => return None,
     }
-
-    if nums.len() == 0 {
-        return 0;
-    }
-
-    nums.sort_by(|a, b| a.0.cmp(&b.0));
-    let res = nums[0].1*10 + nums.last().unwrap().1;
-    println!("src: {:?}", line);
-    println!("nums: {:?}", nums);
-    println!("res: {:?}", res);
-    res
 }
 
-fn do_the_thing(src: &str) -> u32 {
-    let new_text = src;
-    let lines: Vec<&str> = new_text.split('\n').collect();
-    let mut digits: Vec<u32> = vec![];
-    for line in lines {
-        let res = evaluate_line(line);
-        digits.push(res);
+fn solve(input: Vec<String>, threshold: (u32, u32, u32)) -> u32 {
+    let mut sum = 0;
+    for line in input {
+        let line = line;
+        let parts: Vec<&str> = line.split(":").collect();
+
+        if parts.len() != 2 {
+            println!("Invalid line: {}", line);
+            continue;
+        }
+
+        let mut game_num: u32 = 0;
+        if let Some(last_char) = parts[0].split(" ").last() {
+            game_num = last_char.parse::<u32>().unwrap();
+        }
+
+        let iterations = parts[1].split(";").collect::<Vec<&str>>();
+        println!("Iterations: {:?}", iterations);
+
+        let mut is_valid: bool = true;
+        for it in iterations {
+            let rgb: Vec<&str> = it.split(",").collect();
+            println!("RGB: {:?}", rgb);
+            for i in 0..rgb.len() {
+                let bead = extract_beads(rgb[i]);
+                if let Some(bead) = bead {
+                    match bead {
+                        Color::Red(num) => {
+                            if num > threshold.0 {
+                                is_valid = false;
+                                break;
+                            }
+                        }
+                        Color::Green(num) => {
+                            if num > threshold.1 {
+                                is_valid = false;
+                                break;
+                            }
+                        }
+                        Color::Blue(num) => {
+                            if num > threshold.2 {
+                                is_valid = false;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    println!("Invalid bead: {}", rgb[i]);
+                    is_valid = false;
+                    break;
+                }
+            }
+        }
+        if is_valid {
+            sum += game_num;
+        }
+        println!("Game number: {}", game_num);
+        println!("Sum: {}", sum);
     }
-    digits.iter().sum()
+    sum
 }
 
-fn main() -> std::io::Result<()> {
-    let mut file = File::open("src/sample.txt")?;
-    let mut src = String::new(); 
-    file.read_to_string(&mut src)?;
-    let res = do_the_thing(&src);
-    println!("{}", res);
+fn main() -> io::Result<()> {
+    let sample_path = Path::new("sample.txt");
+    let file = File::open(&sample_path)?;
+    let reader = io::BufReader::new(file);
+    // Red, Green, Blue
+    let threshold = (12, 13, 14);
+    let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
+    let ans = solve(lines, threshold);
+    println!("Answer: {}", ans);
+
     Ok(())
 }
