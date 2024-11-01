@@ -215,44 +215,23 @@ impl HailStone {
         HailStone { pos, vel }
     }
 
-    pub fn step(&mut self) {
-        self.pos.x += self.vel.x;
-        self.pos.y += self.vel.y;
-        self.pos.z += self.vel.z;
-    }
-
-    pub fn step_back(&mut self) {
-        self.pos.x -= self.vel.x;
-        self.pos.y -= self.vel.y;
-        self.pos.z -= self.vel.z;
-    }
-
     pub fn get_collision_point(&self, other: &HailStone) -> Option<Vec3<f64>> {
+        if self.vel.x * other.vel.y == self.vel.y * other.vel.x {
+            return None;
+        }
         let incline_self = self.vel.y as f64 / self.vel.x as f64;
         let offset_self = self.pos.y as f64 - incline_self * self.pos.x as f64;
         let incline_other = other.vel.y as f64 / other.vel.x as f64;
         let offset_other = other.pos.y as f64 - incline_other * other.pos.x as f64;
 
-        if incline_self == incline_other {
+        let x = (offset_other - offset_self) / (incline_self - incline_other);
+        if x < 0.0 {
             return None;
         }
-
-        let x = (offset_other - offset_self) / (incline_self - incline_other);
         let y = incline_self * x + offset_self;
         let z = 0.0;
+
         Some(Vec3 { x, y, z })
-    }
-}
-
-impl FromStr for Vec3<i64> {
-    type Err = std::num::ParseIntError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut iter = s.split(',').map(|x| x.parse::<i64>().unwrap());
-        let x = iter.next().unwrap();
-        let y = iter.next().unwrap();
-        let z = iter.next().unwrap();
-        Ok(Vec3 { x, y, z })
     }
 }
 

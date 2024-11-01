@@ -6,14 +6,19 @@ pub fn solve(txt: &str, test_area: &TestArea) -> u64 {
     // for every two lines
     // extract the info
 
+    let hailstones = lines
+        .iter()
+        .map(|x| extract_info(x))
+        .collect::<Vec<HailStone>>();
+
     let mut i = 0usize;
-    while i < lines.len() - 1 {
+    while i < lines.len() {
         let mut j = i + 1;
+
         while j < lines.len() {
-            let hailstone = extract_info(lines[i]);
-            let next_hailstone = extract_info(lines[j]);
-            let collision_point = hailstone.get_collision_point(&next_hailstone);
-            if let Some(point) = collision_point {
+            let hailstone = &hailstones[i];
+            let next_hailstone = &hailstones[j];
+            if let Some(point) = hailstone.get_collision_point(next_hailstone) {
                 if point.is_in_bounds(&test_area) {
                     cnt += 1;
                 }
