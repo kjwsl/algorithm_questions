@@ -26,7 +26,7 @@ impl TestArea {
         TestArea { x_range, y_range }
     }
     pub fn is_in_bounds<T: TestAreaInBounds>(&self, obj: &T) -> bool {
-        obj.is_in_bounds(&self)
+        obj.is_in_bounds(self)
     }
 }
 
@@ -189,7 +189,6 @@ impl HailStone {
             return None;
         }
 
-        const EPSILON: f64 = 1e-2;
         let self_incl = self.vel.y / self.vel.x;
         let other_incl = other.vel.y / other.vel.x;
         let x = (self.pos.x * self_incl - self.pos.y - other.pos.x * other_incl + other.pos.y)
@@ -202,10 +201,7 @@ impl HailStone {
         let t3 = (x - other.pos.x) / other.vel.x;
         let t4 = (y - other.pos.y) / other.vel.y;
 
-        if (t1 < 0.0 || t2 < 0.0 || t3 < 0.0 || t4 < 0.0) {
-            return None;
-        }
-        if (t1 - t2).abs() > EPSILON || (t3 - t4).abs() > EPSILON {
+        if t1 < 0.0 || t2 < 0.0 || t3 < 0.0 || t4 < 0.0 {
             return None;
         }
         Some(Vector3::new(x, y, 0.0))
@@ -218,13 +214,12 @@ pub fn get_hailstones(lines: &str) -> Vec<HailStone> {
 
 impl TestAreaInBounds for HailStone {
     fn is_in_bounds(&self, test_area: &TestArea) -> bool {
-        self.pos.is_in_bounds(&test_area)
+        self.pos.is_in_bounds(test_area)
     }
 }
 
 pub fn extract_info(line: &str) -> HailStone {
     let parts = line.split(&[',', '@'][..]).collect::<Vec<&str>>();
-    dbg!(&parts);
     let pos = Vector3::new(
         parts[0].trim().parse().unwrap(),
         parts[1].trim().parse().unwrap(),
