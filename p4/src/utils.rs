@@ -1,9 +1,16 @@
+use nalgebra::Vector3;
+
 use std::{
     fmt::{Debug, Display},
     i64,
     ops::{Add, Div, Mul, Sub},
     str::FromStr,
 };
+
+pub struct CollisionPoint {
+    pub pos: Vector3<f64>,
+    pub time: f64,
+}
 
 pub struct TestArea {
     pub x_range: (i64, i64),
@@ -59,39 +66,12 @@ impl PartialEq for Vec3<i64> {
     }
 }
 
-impl TestAreaInBounds for Vec3<f64> {
+impl TestAreaInBounds for Vector3<f64> {
     fn is_in_bounds(&self, test_area: &TestArea) -> bool {
         self.x >= test_area.x_range.0 as f64
             && self.x <= test_area.x_range.1 as f64
             && self.y >= test_area.y_range.0 as f64
             && self.y <= test_area.y_range.1 as f64
-    }
-}
-
-impl<T> Vec3<T>
-where
-    T: std::ops::Add<Output = T>
-        + std::ops::Sub<Output = T>
-        + std::ops::Mul<Output = T>
-        + std::ops::Div<Output = T>
-        + std::str::FromStr
-        + Debug
-        + Display
-        + Clone,
-{
-    pub fn new(x: T, y: T, z: T) -> Self {
-        Vec3 { x, y, z }
-    }
-    pub fn from_str(s: &str, delim: &str) -> Self
-    where
-        T: std::str::FromStr,
-        <T as std::str::FromStr>::Err: std::fmt::Debug,
-    {
-        let mut iter = s.split(delim).map(|x| x.trim().parse::<T>().unwrap());
-        let x = iter.next().unwrap();
-        let y = iter.next().unwrap();
-        let z = iter.next().unwrap();
-        Vec3 { x, y, z }
     }
 }
 
@@ -195,19 +175,21 @@ where
 
 #[derive(Debug)]
 pub struct HailStone {
-    pub pos: Vec3<f64>,
-    pub vel: Vec3<f64>,
+    pub pos: Vector3<f64>,
+    pub vel: Vector3<f64>,
 }
 
 impl HailStone {
-    pub fn new(pos: Vec3<f64>, vel: Vec3<f64>) -> Self {
+    pub fn new(pos: Vector3<f64>, vel: Vector3<f64>) -> Self {
         HailStone { pos, vel }
     }
 
-    pub fn get_collision_point(&self, other: &HailStone) -> Option<Vec3<f64>> {
+    pub fn get_collision_point(&self, other: &HailStone) -> Option<Vector3<f64>> {
         if self.vel.y * other.vel.x == self.vel.x * other.vel.y {
             return None;
         }
+
+        const EPSILON: f64 = 1e-2;
         let self_incl = self.vel.y / self.vel.x;
         let other_incl = other.vel.y / other.vel.x;
         let x = (self.pos.x * self_incl - self.pos.y - other.pos.x * other_incl + other.pos.y)
@@ -220,12 +202,18 @@ impl HailStone {
         let t3 = (x - other.pos.x) / other.vel.x;
         let t4 = (y - other.pos.y) / other.vel.y;
 
-        if t1 < 0.0 || t2 < 0.0 || t3 < 0.0 || t4 < 0.0 {
+        if (t1 < 0.0 || t2 < 0.0 || t3 < 0.0 || t4 < 0.0) {
             return None;
         }
-
-        Some(Vec3::new(x, y, 0.0))
+        if (t1 - t2).abs() > EPSILON || (t3 - t4).abs() > EPSILON {
+            return None;
+        }
+        Some(Vector3::new(x, y, 0.0))
     }
+}
+
+pub fn get_hailstones(lines: &str) -> Vec<HailStone> {
+    lines.lines().map(extract_info).collect()
 }
 
 impl TestAreaInBounds for HailStone {
@@ -235,8 +223,17 @@ impl TestAreaInBounds for HailStone {
 }
 
 pub fn extract_info(line: &str) -> HailStone {
-    let (left, right) = line.split_once('@').unwrap();
-    let pos = Vec3::from_str(left, ",");
-    let vel = Vec3::from_str(right, ",");
+    let parts = line.split(&[',', '@'][..]).collect::<Vec<&str>>();
+    dbg!(&parts);
+    let pos = Vector3::new(
+        parts[0].trim().parse().unwrap(),
+        parts[1].trim().parse().unwrap(),
+        parts[2].trim().parse().unwrap(),
+    );
+    let vel = Vector3::new(
+        parts[3].trim().parse().unwrap(),
+        parts[4].trim().parse().unwrap(),
+        parts[5].trim().parse().unwrap(),
+    );
     HailStone::new(pos, vel)
 }
