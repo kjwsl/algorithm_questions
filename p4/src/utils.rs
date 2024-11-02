@@ -210,17 +210,21 @@ impl HailStone {
         }
         let self_incl = self.vel.y / self.vel.x;
         let other_incl = other.vel.y / other.vel.x;
-        let t = (self.pos.x * self_incl - self.pos.y - other.pos.x * other_incl + other.pos.y)
+        let x = (self.pos.x * self_incl - self.pos.y - other.pos.x * other_incl + other.pos.y)
             / (self_incl - other_incl);
+        let x_intercept = self.pos.y - self_incl * self.pos.x;
+        let y = self_incl * x + x_intercept;
 
-        if t < 0.0 {
+        let t1 = (x - self.pos.x) / self.vel.x;
+        let t2 = (y - self.pos.y) / self.vel.y;
+        let t3 = (x - other.pos.x) / other.vel.x;
+        let t4 = (y - other.pos.y) / other.vel.y;
+
+        if t1 < 0.0 || t2 < 0.0 || t3 < 0.0 || t4 < 0.0 {
             return None;
         }
 
-        let x_intercept = self.pos.y - self_incl * self.pos.x;
-        let y = self_incl * t + x_intercept;
-
-        Some(Vec3::new(t, y, 0.0))
+        Some(Vec3::new(x, y, 0.0))
     }
 }
 

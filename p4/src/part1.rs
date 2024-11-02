@@ -21,6 +21,11 @@ pub fn solve(txt: &str, test_area: &TestArea) -> u64 {
             if let Some(point) = hailstone.get_collision_point(next_hailstone) {
                 if test_area.is_in_bounds(&point) {
                     cnt += 1;
+                    println!(
+                        "hailstone: {:?}, next_hailstone: {:?}",
+                        hailstone.pos, next_hailstone.pos
+                    );
+                    println!("point: {:?}", point);
                 }
             }
             j += 1;
