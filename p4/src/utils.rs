@@ -18,6 +18,9 @@ impl TestArea {
     pub fn new(x_range: (i64, i64), y_range: (i64, i64)) -> Self {
         TestArea { x_range, y_range }
     }
+    pub fn is_in_bounds<T: TestAreaInBounds>(&self, obj: &T) -> bool {
+        obj.is_in_bounds(&self)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -56,14 +59,6 @@ impl PartialEq for Vec3<i64> {
     }
 }
 
-impl TestAreaInBounds for Vec3<i64> {
-    fn is_in_bounds(&self, test_area: &TestArea) -> bool {
-        self.x >= test_area.x_range.0
-            && self.x <= test_area.x_range.1
-            && self.y >= test_area.y_range.0
-            && self.y <= test_area.y_range.1
-    }
-}
 impl TestAreaInBounds for Vec3<f64> {
     fn is_in_bounds(&self, test_area: &TestArea) -> bool {
         self.x >= test_area.x_range.0 as f64
@@ -200,38 +195,38 @@ where
 
 #[derive(Debug)]
 pub struct HailStone {
-    pub pos: Vec3<i64>,
-    pub vel: Vec3<i64>,
+    pub pos: Vec3<f64>,
+    pub vel: Vec3<f64>,
+}
+
+impl HailStone {
+    pub fn new(pos: Vec3<f64>, vel: Vec3<f64>) -> Self {
+        HailStone { pos, vel }
+    }
+
+    pub fn get_collision_point(&self, other: &HailStone) -> Option<Vec3<f64>> {
+        if self.vel.y * other.vel.x == self.vel.x * other.vel.y {
+            return None;
+        }
+        let self_incl = self.vel.y / self.vel.x;
+        let other_incl = other.vel.y / other.vel.x;
+        let t = (self.pos.x * self_incl - self.pos.y - other.pos.x * other_incl + other.pos.y)
+            / (self_incl - other_incl);
+
+        if t < 0.0 {
+            return None;
+        }
+
+        let x_intercept = self.pos.y - self_incl * self.pos.x;
+        let y = self_incl * t + x_intercept;
+
+        Some(Vec3::new(t, y, 0.0))
+    }
 }
 
 impl TestAreaInBounds for HailStone {
     fn is_in_bounds(&self, test_area: &TestArea) -> bool {
         self.pos.is_in_bounds(&test_area)
-    }
-}
-
-impl HailStone {
-    pub fn new(pos: Vec3<i64>, vel: Vec3<i64>) -> Self {
-        HailStone { pos, vel }
-    }
-
-    pub fn get_collision_point(&self, other: &HailStone) -> Option<Vec3<f64>> {
-        if self.vel.x * other.vel.y == self.vel.y * other.vel.x {
-            return None;
-        }
-        let incline_self = self.vel.y as f64 / self.vel.x as f64;
-        let offset_self = self.pos.y as f64 - incline_self * self.pos.x as f64;
-        let incline_other = other.vel.y as f64 / other.vel.x as f64;
-        let offset_other = other.pos.y as f64 - incline_other * other.pos.x as f64;
-
-        let x = (offset_other - offset_self) / (incline_self - incline_other);
-        if x < 0.0 {
-            return None;
-        }
-        let y = incline_self * x + offset_self;
-        let z = 0.0;
-
-        Some(Vec3 { x, y, z })
     }
 }
 

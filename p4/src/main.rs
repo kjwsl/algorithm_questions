@@ -1,7 +1,9 @@
 mod part1;
 mod part2;
+#[cfg(test)]
 mod test;
 mod utils;
+use utils::TestArea;
 
 fn read_file(file_name: &str) -> String {
     match std::fs::read_to_string(file_name) {
@@ -16,7 +18,7 @@ fn read_file(file_name: &str) -> String {
 fn main() {
     let txt = read_file("sample.txt");
 
-    let test_area = utils::TestArea::new(
+    let test_area = TestArea::new(
         (200000000000000, 400000000000000),
         (200000000000000, 400000000000000),
     );
