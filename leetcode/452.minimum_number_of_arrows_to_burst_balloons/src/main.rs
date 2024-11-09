@@ -1,3 +1,6 @@
+mod test;
+use test::Test;
+
 fn solve(points: Vec<Vec<i32>>) -> i32 {
     if points.is_empty() {
         return 0;
@@ -53,26 +56,18 @@ fn solve2(points: Vec<Vec<i32>>) -> i32 {
     arrow_count
 }
 
-fn test(points: Vec<Vec<i32>>, expect: i32) {
-    static mut TEST_NUM: i32 = 0;
-    let result = solve(points);
-    let success = result == expect;
-    println!(
-        "Test {}: {}",
-        unsafe { TEST_NUM },
-        if success { "Success" } else { "Failed" }
-    );
-    if !success {
-        println!("  expect: {}", expect);
-        println!("  result: {}", result);
-    }
-    unsafe {
-        TEST_NUM += 1;
-    }
-}
-
 fn main() {
-    test(vec![vec![10, 16], vec![2, 8], vec![1, 6], vec![7, 12]], 2);
-    test(vec![vec![1, 2], vec![3, 4], vec![5, 6], vec![7, 8]], 4);
-    test(vec![vec![1, 2], vec![2, 3], vec![3, 4], vec![4, 5]], 2);
+    let mut test = Test::new();
+    test.validate(
+        solve(vec![vec![10, 16], vec![2, 8], vec![1, 6], vec![7, 12]]),
+        2,
+    );
+    test.validate(
+        solve(vec![vec![1, 2], vec![3, 4], vec![5, 6], vec![7, 8]]),
+        4,
+    );
+    test.validate(
+        solve(vec![vec![1, 2], vec![2, 3], vec![3, 4], vec![4, 5]]),
+        2,
+    );
 }
