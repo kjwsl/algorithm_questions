@@ -1,121 +1,145 @@
+use std::vec::Vec;
 mod test;
-use std::collections::VecDeque;
 use test::Test;
 
+// Define the Solution struct
 struct Solution {}
 
+// Define the Calculator struct with num_stack and op_stack using Vec for efficiency
 struct Calculator {
-    num_stack: VecDeque<i32>,
-    op_stack: VecDeque<String>,
+    num_stack: Vec<i32>,
+    op_stack: Vec<char>,
 }
 
-trait BinaryOperation<T, Output>: Fn(T, T) -> Output {}
-
-impl<T, Output, F> BinaryOperation<T, Output> for F where F: Fn(T, T) -> Output {}
-
 impl Calculator {
+    /// Creates a new Calculator instance
+    #[inline]
     pub fn new() -> Self {
         Self {
-            num_stack: VecDeque::new(),
-            op_stack: VecDeque::new(),
+            num_stack: Vec::new(),
+            op_stack: Vec::new(),
         }
     }
 
-    fn operate(&mut self) {
-        println!("Operating binary...");
-        let op = self.op_stack.pop_front().unwrap();
-        let val = match op.as_str() {
-            "+" => {
-                let num1 = self.num_stack.pop_front().unwrap();
-                let num2 = self.num_stack.pop_front().unwrap();
-                num1 + num2
-            }
-            "-" => num1 - num2,
-            _ => num1,
-        };
-        println!("{} {} {} = {}", num1, op, num2, val);
-        self.num_stack.push_front(val);
-    }
-
-    fn operate_binary_priority(&mut self) {
-        let mut num_stack = Vec::new();
-        let mut op_stack = Vec::new();
-        num_stack.push(self.num_stack.pop_back().unwrap());
-        while !self.op_stack.is_empty() {
-            let op: String = self.op_stack.pop_back().unwrap();
-            if op.as_str() == "(" {
-                break;
-            }
-            op_stack.push(op);
-            num_stack.push(self.num_stack.pop_back().unwrap());
-        }
-
-        while !op_stack.is_empty() {
-            let num1 = num_stack.pop().unwrap();
-            let num2 = num_stack.pop().unwrap();
-            let op = op_stack.pop().unwrap();
-            let val = match op.as_str() {
-                "+" => num1 + num2,
-                "-" => num1 - num2,
-                _ => num1,
+    /// Applies the top operator on the stacks to the top two numbers
+    #[inline]
+    fn apply_operator(&mut self) {
+        // Ensure there are at least two numbers and one operator
+        if let (Some(op), Some(num2), Some(num1)) = (
+            self.op_stack.pop(),
+            self.num_stack.pop(),
+            self.num_stack.pop(),
+        ) {
+            let result = match op {
+                '+' => num1 + num2,
+                '-' => num1 - num2,
+                _ => panic!("Unsupported operator: {}", op),
             };
-            num_stack.push(val);
+            self.num_stack.push(result);
         }
-
-        self.num_stack.push_back(num_stack.pop().unwrap());
     }
 
+    /// Calculates the result of the given arithmetic expression
     pub fn calculate(&mut self, expression: &str) -> i32 {
-        let mut paren_cnt = 0;
-        let mut it = expression.chars().peekable();
-        while let Some(c) = it.peek() {
+        let mut chars = expression.chars().peekable();
+        let mut prev_char: Option<char> = None;
+
+        while let Some(&c) = chars.peek() {
             match c {
                 ' ' => {
-                    it.next();
+                    // Skip whitespace
+                    chars.next();
                 }
                 '+' | '-' => {
-                    self.op_stack.push_back(c.to_string());
-                    it.next();
+                    // Determine if the operator is unary
+                    if prev_char.is_none() || matches!(prev_char, Some('(') | Some('+') | Some('-'))
+                    {
+                        // Unary operator detected
+                        if c == '-' {
+                            // For unary '-', push 0 and '-' to op_stack to represent (0 - ...)
+                            self.num_stack.push(0);
+                            self.op_stack.push('-');
+                        } else {
+                            // For unary '+', push 0 and '+' to op_stack to represent (0 + ...)
+                            self.num_stack.push(0);
+                            self.op_stack.push('+');
+                        }
+                        chars.next(); // Consume the operator
+                        prev_char = Some(c);
+                    } else {
+                        // Binary operator detected
+                        // Apply all existing operators of equal or higher precedence
+                        while let Some(&top_op) = self.op_stack.last() {
+                            if top_op == '(' {
+                                break;
+                            }
+                            self.apply_operator();
+                        }
+                        self.op_stack.push(c);
+                        chars.next(); // Consume the operator
+                        prev_char = Some(c);
+                    }
                 }
                 '(' => {
-                    paren_cnt += 1;
-                    it.next();
+                    // Push '(' to op_stack
+                    self.op_stack.push('(');
+                    chars.next(); // Consume '('
+                    prev_char = Some('(');
                 }
                 ')' => {
-                    while !self.op_stack.is_empty() {
-                        self.operate_binary_priority();
+                    // Apply all operators until '(' is encountered
+                    while let Some(&op) = self.op_stack.last() {
+                        if op == '(' {
+                            break;
+                        }
+                        self.apply_operator();
                     }
-                    paren_cnt -= 1;
-                    it.next();
+                    if self.op_stack.last() == Some(&'(') {
+                        self.op_stack.pop(); // Remove '(' from stack
+                    } else {
+                        panic!("Mismatched parentheses detected.");
+                    }
+                    chars.next(); // Consume ')'
+                    prev_char = Some(')');
                 }
-                _ => {
+                c if c.is_ascii_digit() => {
+                    // Parse the number and push to num_stack
                     let mut num = 0;
-                    while let Some(c) = it.peek() {
-                        if c.is_ascii_digit() {
-                            num = num * 10 + c.to_digit(10).unwrap() as i32;
-                            it.next();
+                    while let Some(&c_digit) = chars.peek() {
+                        if c_digit.is_ascii_digit() {
+                            num = num * 10 + c_digit.to_digit(10).unwrap() as i32;
+                            chars.next();
                         } else {
                             break;
                         }
                     }
-                    self.num_stack.push_back(num);
+                    self.num_stack.push(num);
+                    prev_char = Some('n'); // 'n' denotes a number
+                }
+                _ => {
+                    panic!("Invalid character encountered: {}", c);
                 }
             }
         }
 
-        while !self.op_stack.is_empty() {
-            self.operate();
+        // Apply any remaining operators
+        while let Some(&op) = self.op_stack.last() {
+            if op == '(' {
+                panic!("Mismatched parentheses detected.");
+            }
+            self.apply_operator();
         }
 
-        self.num_stack.pop_front().unwrap()
+        // The final result should be the only number left on the stack
+        self.num_stack.pop().unwrap_or(0)
     }
 }
 
 impl Solution {
+    /// Public method to calculate the expression
     pub fn calculate(s: String) -> i32 {
         let mut calculator = Calculator::new();
-
-        calculator.calculate(s.as_str())
+        calculator.calculate(&s)
     }
 }
 
@@ -125,4 +149,6 @@ fn main() {
     test.validate(Solution::calculate(String::from(" 2-1 + 2 ")), 3);
     test.validate(Solution::calculate(String::from("(1+(4+5+2)-3)+(6+8)")), 23);
     test.validate(Solution::calculate(String::from("1-(     -2)")), 3);
+    test.validate(Solution::calculate(String::from("-2+ 1")), -1);
+    test.validate(Solution::calculate(String::from("-(3+(2-1))")), -4);
 }
