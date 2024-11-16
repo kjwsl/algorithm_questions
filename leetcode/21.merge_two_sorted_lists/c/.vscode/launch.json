@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/ray/github/code_problems/leetcode/21.merge_two_sorted_lists/c",
+      "program": "/Users/ray/github/code_problems/leetcode/21.merge_two_sorted_lists/c/build/Debug/outDebug"
+    }
+  ]
+}

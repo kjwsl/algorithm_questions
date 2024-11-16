@@ -25,25 +25,50 @@ class Solution {
 public:
     ListNode* removeNthFromEnd(ListNode* head, int n)
     {
-        ListNode* dummy = new ListNode(0);
-        dummy->next     = head;
-        std::queue<ListNode*> node_trace {};
-        while (dummy) {
-            node_trace.push(dummy);
-            if (node_trace.size() > n + 1) {
-                node_trace.pop();
-            }
+
+        ListNode* dummy { head };
+        std::queue<ListNode*> my_q {};
+        unsigned int size { 0 };
+        while (dummy != nullptr) {
+            my_q.push(dummy);
             dummy = dummy->next;
+            if (my_q.size() > n + 1) {
+                my_q.pop();
+            }
+            size++;
         }
-        ListNode* prev_target = node_trace.front();
-        node_trace.pop();
 
-        ListNode* target = node_trace.front();
-        node_trace.pop();
+        if (size == 1) {
+            return nullptr;
+        }
 
-        ListNode* next_target = node_trace.front();
+        if (n == 1) {
+            while (my_q.size() > 2) {
+                my_q.pop();
+            }
+            ListNode* prev { my_q.front() };
+            my_q.pop();
 
-        prev_target->next     = next_target;
+            ListNode* target { my_q.front() };
+            prev->next = nullptr;
+        } else {
+            if (size == n) {
+                ListNode* tmp { head };
+                head = head->next;
+                delete tmp;
+                return head;
+            }
+            ListNode* prev { my_q.front() };
+            my_q.pop();
+            ListNode* target { my_q.front() };
+            my_q.pop();
+            ListNode* next { my_q.front() };
+            my_q.pop();
+
+            delete target;
+            target     = nullptr;
+            prev->next = next;
+        }
 
         return head;
     }
