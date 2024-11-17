@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/ray/github/code_problems/leetcode/105.Construct_Binary_Tree_from_Preorder_and_Inorder_Traversal/cpp",
+      "program": "/Users/ray/github/code_problems/leetcode/105.Construct_Binary_Tree_from_Preorder_and_Inorder_Traversal/cpp/build/Debug/outDebug"
+    }
+  ]
+}
