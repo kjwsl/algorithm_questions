@@ -1,48 +1,58 @@
+use std::collections::{BinaryHeap, HashMap, LinkedList, VecDeque};
+
 struct LRUCache {
+    map: HashMap<i32, i32>,
+    list: LinkedList<i32>,
+    history: VecDeque<i32>,
     capacity: i32,
-    cache: std::collections::HashMap<i32, i32>,
-    lru: std::collections::VecDeque<i32>,
 }
 
 /**
  * `&self` means the method takes an immutable reference.
  * If you need a mutable reference, change it to `&mut self` instead.
  */
-
 impl LRUCache {
     fn new(capacity: i32) -> Self {
         Self {
+            map: HashMap::new(),
+            list: LinkedList::new(),
+            history: VecDeque::new(),
             capacity,
-            cache: std::collections::HashMap::new(),
-            lru: std::collections::VecDeque::new(),
         }
     }
 
     fn get(&mut self, key: i32) -> i32 {
-        match self.cache.get(&key) {
-            Some(val) => {
-                self.lru
-                    .remove(self.lru.iter().position(|&x| x == key).unwrap());
-                self.lru.push_front(key);
-                val.to_owned()
+        match self.map.get(&key) {
+            Some(&val) => {
+                self.update_history(key);
+                val
             }
             None => -1,
         }
     }
 
-    fn put(&mut self, key: i32, value: i32) {
-        if self.cache.contains_key(&key) {
-            self.cache.insert(key, value);
-            self.lru
-                .remove(self.lru.iter().position(|&x| x == key).unwrap());
-            self.lru.push_front(key);
-        } else {
-            if self.cache.len() == self.capacity as usize {
-                let lru_key = self.lru.pop_back().unwrap();
-                self.cache.remove(&lru_key);
-            }
-            self.cache.insert(key, value);
-            self.lru.push_front(key);
+    fn update_history(&mut self, key: i32) {
+        if let Some(pos) = self.history.iter().position(|&k| k == key) {
+            self.history.remove(pos);
         }
+
+        self.history.push_front(key);
+
+        if self.history.len() as i32 > self.capacity {
+            if let Some(key) = self.history.pop_back() {
+                self.map.remove(&key);
+            }
+        }
+    }
+
+    fn put(&mut self, key: i32, value: i32) {
+        if !self.map.contains_key(&key) {
+            while self.map.len() as i32 >= self.capacity {
+                let key = self.history.pop_back().expect("no history");
+                self.map.remove(&key);
+            }
+        }
+        self.map.insert(key, value);
+        self.update_history(key);
     }
 }
