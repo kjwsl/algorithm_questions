@@ -18,19 +18,7 @@ impl TreeNode {
     }
 }
 use std::cell::RefCell;
-use std::cmp::max;
 use std::rc::Rc;
 impl Solution {
-    pub fn max_depth(root: Option<Rc<RefCell<TreeNode>>>) -> i32 {
-        match root {
-            None => 0,
-            Some(node) => {
-                let node = node.borrow();
-                max(
-                    Solution::max_depth(node.left.clone()),
-                    Solution::max_depth(node.right.clone()),
-                ) + 1
-            }
-        }
-    }
+    pub fn max_path_sum(root: Option<Rc<RefCell<TreeNode>>>) -> i32 {}
 }
