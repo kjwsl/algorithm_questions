@@ -15,6 +15,46 @@ impl Rope {
         }
     }
 
+    fn print_state(&self) {
+        let mut field = [
+            vec!['.', '.', '.'],
+            vec!['.', 'H', '.'],
+            vec!['.', '.', '.'],
+        ];
+
+        let (tail_x, tail_y) = self.tail;
+        let (head_x, head_y) = self.head;
+
+        let delta_x = tail_x - head_x;
+        let delta_y = -(tail_y - head_y);
+
+        field[(delta_y + 1) as usize][(delta_x + 1) as usize] = 'T';
+
+        println!(
+            "
+                      {:^4}
+                 +---+---+---+
+                 | {} | {} | {} |
+                 +---+---+---+
+            {:<4} | {} | {} | {} |
+                 +---+---+---+
+                 | {} | {} | {} |
+                 +---+---+---+
+            ",
+            self.head.0,
+            field[0][0],
+            field[0][1],
+            field[0][2],
+            self.head.1,
+            field[1][0],
+            field[1][1],
+            field[1][2],
+            field[2][0],
+            field[2][1],
+            field[2][2]
+        );
+    }
+
     fn tail_need_move(&self) -> bool {
         let (head_x, head_y) = self.head;
         let (tail_x, tail_y) = self.tail;
@@ -63,8 +103,13 @@ impl Rope {
             }
         }
 
-        if !self.routes.contains(&self.head) {
-            self.routes.insert(self.head);
+        println!("Direction: {}", direction);
+        // self.print_state();
+        // println!("direction: {}", direction);
+        // println!("head: {:?}, tail: {:?}", self.head, self.tail);
+
+        if !self.routes.contains(&self.tail) {
+            self.routes.insert(self.tail);
         }
     }
 
