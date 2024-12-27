@@ -1,8 +1,11 @@
-mod part1;
-mod part2;
+mod solution;
+use crate::solution::Solution;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").expect("Error reading file");
 
-    println!("Part 1: {}", part1::solve(&input));
+    let mut sol = Solution::new(&input);
+
+    println!("part1: {}", sol.solve_part1());
+    println!("part2: {}", sol.solve_part2());
 }
