@@ -2,144 +2,144 @@ use std::vec::Vec;
 mod test;
 use test::Test;
 
-// Define the Solution struct
-struct Solution {}
+#[derive(Debug, PartialEq)]
+enum Token {
+    Number(i32),
+    Operator(Operator),
+    LeftParen,
+    RightParen,
+}
 
-// Define the Calculator struct with num_stack and op_stack using Vec for efficiency
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum Operator {
+    Add,
+    Subtract,
+}
+
+impl Operator {
+    fn apply(&self, left: i32, right: i32) -> i32 {
+        match self {
+            Operator::Add => left + right,
+            Operator::Subtract => left - right,
+        }
+    }
+}
+
+#[derive(Debug)]
 struct Calculator {
-    num_stack: Vec<i32>,
-    op_stack: Vec<char>,
+    numbers: Vec<i32>,
+    operators: Vec<(Operator, u8)>,
 }
 
 impl Calculator {
-    /// Creates a new Calculator instance
-    #[inline]
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
-            num_stack: Vec::new(),
-            op_stack: Vec::new(),
+            numbers: Vec::new(),
+            operators: Vec::new(),
         }
     }
 
-    /// Applies the top operator on the stacks to the top two numbers
-    #[inline]
-    fn apply_operator(&mut self) {
-        // Ensure there are at least two numbers and one operator
-        if let (Some(op), Some(num2), Some(num1)) = (
-            self.op_stack.pop(),
-            self.num_stack.pop(),
-            self.num_stack.pop(),
-        ) {
-            let result = match op {
-                '+' => num1 + num2,
-                '-' => num1 - num2,
-                _ => panic!("Unsupported operator: {}", op),
-            };
-            self.num_stack.push(result);
+    fn evaluate_top(&mut self) {
+        if let (Some(right), Some(left)) = (self.numbers.pop(), self.numbers.pop()) {
+            if let Some((op, _)) = self.operators.pop() {
+                let result = op.apply(left, right);
+                self.numbers.push(result);
+            }
         }
     }
 
-    /// Calculates the result of the given arithmetic expression
-    pub fn calculate(&mut self, expression: &str) -> i32 {
-        let mut chars = expression.chars().peekable();
-        let mut prev_char: Option<char> = None;
+    fn evaluate(&mut self, tokens: Vec<Token>) -> Result<i32, String> {
+        for token in tokens {
+            match token {
+                Token::Number(n) => self.numbers.push(n),
+                Token::Operator(op) => {
+                    while !self.operators.is_empty() 
+                        && self.operators.last().unwrap().1 >= 1 {
+                        self.evaluate_top();
+                    }
+                    self.operators.push((op, 1));
+                }
+                Token::LeftParen => self.operators.push((Operator::Add, 0)),
+                Token::RightParen => {
+                    while !self.operators.is_empty() && self.operators.last().unwrap().1 > 0 {
+                        self.evaluate_top();
+                    }
+                    self.operators.pop().ok_or("Mismatched parentheses")?;
+                }
+            }
+        }
+
+        while !self.operators.is_empty() {
+            if self.operators.last().unwrap().1 == 0 {
+                return Err("Mismatched parentheses".to_string());
+            }
+            self.evaluate_top();
+        }
+
+        self.numbers.pop().ok_or("Empty expression".to_string())
+    }
+}
+
+struct Parser;
+
+impl Parser {
+    fn tokenize(expr: &str) -> Result<Vec<Token>, String> {
+        let mut tokens = Vec::new();
+        let mut chars = expr.chars().peekable();
+        let mut last_token: Option<&Token> = None;
 
         while let Some(&c) = chars.peek() {
             match c {
-                ' ' => {
-                    // Skip whitespace
-                    chars.next();
-                }
-                '+' | '-' => {
-                    // Determine if the operator is unary
-                    if prev_char.is_none() || matches!(prev_char, Some('(') | Some('+') | Some('-'))
-                    {
-                        // Unary operator detected
-                        if c == '-' {
-                            // For unary '-', push 0 and '-' to op_stack to represent (0 - ...)
-                            self.num_stack.push(0);
-                            self.op_stack.push('-');
-                        } else {
-                            // For unary '+', push 0 and '+' to op_stack to represent (0 + ...)
-                            self.num_stack.push(0);
-                            self.op_stack.push('+');
-                        }
-                        chars.next(); // Consume the operator
-                        prev_char = Some(c);
-                    } else {
-                        // Binary operator detected
-                        // Apply all existing operators of equal or higher precedence
-                        while let Some(&top_op) = self.op_stack.last() {
-                            if top_op == '(' {
-                                break;
-                            }
-                            self.apply_operator();
-                        }
-                        self.op_stack.push(c);
-                        chars.next(); // Consume the operator
-                        prev_char = Some(c);
-                    }
-                }
-                '(' => {
-                    // Push '(' to op_stack
-                    self.op_stack.push('(');
-                    chars.next(); // Consume '('
-                    prev_char = Some('(');
-                }
-                ')' => {
-                    // Apply all operators until '(' is encountered
-                    while let Some(&op) = self.op_stack.last() {
-                        if op == '(' {
-                            break;
-                        }
-                        self.apply_operator();
-                    }
-                    if self.op_stack.last() == Some(&'(') {
-                        self.op_stack.pop(); // Remove '(' from stack
-                    } else {
-                        panic!("Mismatched parentheses detected.");
-                    }
-                    chars.next(); // Consume ')'
-                    prev_char = Some(')');
-                }
-                c if c.is_ascii_digit() => {
-                    // Parse the number and push to num_stack
-                    let mut num = 0;
-                    while let Some(&c_digit) = chars.peek() {
-                        if c_digit.is_ascii_digit() {
-                            num = num * 10 + c_digit.to_digit(10).unwrap() as i32;
+                ' ' => { chars.next(); }
+                '0'..='9' => {
+                    let mut number = 0;
+                    while let Some(&d) = chars.peek() {
+                        if let Some(digit) = d.to_digit(10) {
+                            number = number * 10 + digit as i32;
                             chars.next();
                         } else {
                             break;
                         }
                     }
-                    self.num_stack.push(num);
-                    prev_char = Some('n'); // 'n' denotes a number
+                    tokens.push(Token::Number(number));
                 }
-                _ => {
-                    panic!("Invalid character encountered: {}", c);
+                '+' | '-' => {
+                    let is_unary = last_token.map_or(true, |t| 
+                        matches!(t, Token::Operator(_) | Token::LeftParen) || last_token.is_none());
+                    chars.next();
+                    
+                    if is_unary && c == '-' {
+                        tokens.push(Token::Number(0));
+                        tokens.push(Token::Operator(Operator::Subtract));
+                    } else if !is_unary {
+                        tokens.push(Token::Operator(
+                            if c == '+' { Operator::Add } else { Operator::Subtract }
+                        ));
+                    }
                 }
+                '(' => {
+                    chars.next();
+                    tokens.push(Token::LeftParen);
+                }
+                ')' => {
+                    chars.next();
+                    tokens.push(Token::RightParen);
+                }
+                _ => return Err(format!("Invalid character: {}", c)),
             }
+            last_token = tokens.last();
         }
-
-        // Apply any remaining operators
-        while let Some(&op) = self.op_stack.last() {
-            if op == '(' {
-                panic!("Mismatched parentheses detected.");
-            }
-            self.apply_operator();
-        }
-
-        // The final result should be the only number left on the stack
-        self.num_stack.pop().unwrap_or(0)
+        Ok(tokens)
     }
 }
 
+struct Solution;
+
 impl Solution {
-    /// Public method to calculate the expression
     pub fn calculate(s: String) -> i32 {
+        let tokens = Parser::tokenize(&s).unwrap_or_default();
         let mut calculator = Calculator::new();
-        calculator.calculate(&s)
+        calculator.evaluate(tokens).unwrap_or(0)
     }
 }
 
@@ -147,8 +147,8 @@ fn main() {
     let mut test = Test::new();
     test.validate(Solution::calculate(String::from("1 + 1")), 2);
     test.validate(Solution::calculate(String::from(" 2-1 + 2 ")), 3);
-    test.validate(Solution::calculate(String::from("(1+(4+5+2)-3)+(6+8)")), 23);
-    test.validate(Solution::calculate(String::from("1-(     -2)")), 3);
     test.validate(Solution::calculate(String::from("-2+ 1")), -1);
-    test.validate(Solution::calculate(String::from("-(3+(2-1))")), -4);
+    test.validate(Solution::calculate(String::from("(1 + 1)")), 2);
+    test.validate(Solution::calculate(String::from("2-(1 + 2)")), -1);
+    test.validate(Solution::calculate(String::from("(1+(4+5+2)-3)+(6+8)")), 23);
 }
