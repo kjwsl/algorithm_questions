@@ -1,50 +1,61 @@
 use std::collections::HashMap;
 
 pub fn solve(input: &str) -> i32 {
-    let mut result = 0;
-    let (section_ordering_rules, section_lists_of_pages_to_update) =
-        input.split_once("\n\n").unwrap();
-
+    let mut sum = 0;
+    
+    // Split input into rules and lists sections
+    let (rules_section, lists_section) = input.split_once("\n\n").unwrap();
+    
+    // Parse ordering rules
     let mut ordering_rules: HashMap<i32, Vec<i32>> = HashMap::new();
-    for rule in section_ordering_rules.lines() {
+    for rule in rules_section.lines() {
         let (a, b) = rule.split_once("|").unwrap();
         let a = a.trim().parse::<i32>().unwrap();
         let b = b.trim().parse::<i32>().unwrap();
         ordering_rules.entry(a).or_default().push(b);
     }
-
-    for update_list in section_lists_of_pages_to_update.lines() {
-        let mut pages = update_list
-            .split(",")
-            .map(|page| page.trim().parse::<i32>().unwrap())
-            .collect::<Vec<_>>();
-
-        let mut is_correct_order = false;
-        while !is_correct_order {
-            for i in (0..pages.len()).rev() {
-                if let Some(possible_next_pages) = ordering_rules.get(&pages[i]) {
-                    if let Some(val) = possible_next_pages.iter().position(|&next_page| {
-                        pages
-                            .iter()
-                            .rev()
-                            .skip(pages.len() - i)
-                            .any(|&page| page == next_page)
-                    }) {
-                        let idx = pages.len() - val;
-                        println!("swap {}, {}", i, idx);
-                        pages.swap(i, idx);
-                        break;
-                    } else {
-                        is_correct_order = true;
-                    }
+    
+    // Process each line in the lists section
+    for line in lists_section.lines() {
+        let nums: Vec<i32> = line
+            .split(',')
+            .map(|n| n.trim().parse::<i32>().unwrap())
+            .collect();
+            
+        // Check if order is incorrect using part1's logic
+        let mut is_incorrect_order = false;
+        for i in (0..nums.len()).rev() {
+            if let Some(possible_next_pages) = ordering_rules.get(&nums[i]) {
+                if possible_next_pages.iter().any(|&next_page| {
+                    nums.iter()
+                        .rev()
+                        .skip(nums.len() - i)
+                        .any(|&page| page == next_page)
+                }) {
+                    is_incorrect_order = true;
+                    break;
                 }
             }
         }
-
-        if is_correct_order {
-            result += pages[pages.len() / 2];
+        
+        // Only process sequences that are in incorrect order
+        if is_incorrect_order {
+            // Create sorted version based on rules
+            let mut sorted = nums.clone();
+            sorted.sort_by(|&a, &b| {
+                if ordering_rules.get(&a).map_or(false, |nexts| nexts.contains(&b)) {
+                    std::cmp::Ordering::Greater
+                } else if ordering_rules.get(&b).map_or(false, |nexts| nexts.contains(&a)) {
+                    std::cmp::Ordering::Less
+                } else {
+                    b.cmp(&a)
+                }
+            });
+            
+            let mid_idx = sorted.len() / 2;
+            sum += sorted[mid_idx];
         }
     }
-
-    result
+    
+    sum
 }
