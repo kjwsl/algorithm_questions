@@ -1,22 +1,28 @@
 pub struct Solution;
+use std::collections::HashMap;
 
-// 1) 1
-// 2) 2 | 1 + 1
-// 3) 5 | 2 + 1 + 2
-// 4) 14 | 5 + 2 + 2 + 5 
-// 5) 42 | 14 + 5 + 2 + 2 + 5 + 14 | 14 + 14 + 14
-// 6) 132  | 42 + 14 + ( 2+5 ) + (5+2) + 14 + 42 | 42 + 48 + 42
-
-//0, 1, 4, 24, 48
-
-// 1 3 12 60 74
 impl Solution {
     pub fn num_trees(n: i32) -> i32 {
-        if n <= 1 {
-            1
-        } else {
-            Self::num_trees(n - 1) * 2 + Self::num_trees(n - 2)
-                3 4 5 
+        Self::num_trees_memo(n, &mut HashMap::new())
+    }
+
+    fn num_trees_memo(n: i32, cache: &mut HashMap<i32, i32>) -> i32 {
+        if let Some(&result) = cache.get(&n) {
+            return result;
         }
+
+        if n <= 1 {
+            return 1;
+        }
+
+        let mut total = 0;
+        for i in 1..=n {
+            let left_count = Self::num_trees_memo(i - 1, cache);
+            let right_count = Self::num_trees_memo(n - i, cache);
+            total += left_count * right_count;
+        }
+
+        cache.insert(n, total);
+        total
     }
 }
