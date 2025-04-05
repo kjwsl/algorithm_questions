@@ -5,10 +5,11 @@ pub struct Solution;
 impl Solution {
     pub fn part1(input: &str) -> u32 {
         let map = TopographicMap::new(input);
-        map.count_all_trailheads()
+        map.count_all_trailheads(true)
     }
-    pub fn part2(input: &str) -> i32 {
-        todo!()
+    pub fn part2(input: &str) -> u32 {
+        let map = TopographicMap::new(input);
+        map.count_all_trailheads(false)
     }
 }
 
@@ -34,7 +35,7 @@ impl TopographicMap {
         TopographicMap { map, width, height }
     }
 
-    pub fn count_all_trailheads(&self) -> u32 {
+    pub fn count_all_trailheads(&self, unique: bool) -> u32 {
         let grounds = self.find_grounds();
         if grounds.is_empty() {
             return 0;
@@ -54,10 +55,12 @@ impl TopographicMap {
                 for direction in Direction::SEQ {
                     for coor in &start_points {
                         if let Some(coor) = self.mv_coor(*coor, direction) {
-                            if checked.contains(&coor) {
-                                continue;
-                            } else {
-                                checked.insert(coor);
+                            if unique {
+                                if checked.contains(&coor) {
+                                    continue;
+                                } else {
+                                    checked.insert(coor);
+                                }
                             }
                             if let Some(&height) = self.get(coor) {
                                 if height == expected {
@@ -178,5 +181,10 @@ mod tests {
     #[test]
     fn test_part1_2() {
         assert_eq!(Solution::part1(SAMPLE2), 36);
+    }
+
+    #[test]
+    fn test_part2_1() {
+        assert_eq!(Solution::part2(SAMPLE2), 81)
     }
 }
