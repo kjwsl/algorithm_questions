@@ -1,11 +1,8 @@
-mod solution;
-use crate::solution::Solution;
+use rust::Solution;
 
 fn main() {
-    let input = std::fs::read_to_string("input.txt").expect("Error reading file");
+    let input = include_str!("input.txt");
 
-    let mut sol = Solution::new(&input);
-
-    println!("part1: {}", sol.solve_part1());
-    println!("part2: {}", sol.solve_part2());
+    println!("part1: {}", Solution::part1(input));
+    println!("part2: {}", Solution::part2(input));
 }
