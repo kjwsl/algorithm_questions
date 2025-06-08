@@ -1,74 +1,81 @@
 pub struct Solution;
 
-struct Machine {
-    button_a: (i32, i32),
-    button_b: (i32, i32),
-    prize: (i32, i32),
+impl Solution {
+    fn parse_input(input: &str) -> Vec<ClawMachine> {
+        let mut ret = vec![];
+        for w in input.lines().collect::<Vec<_>>().chunks_exact(4) {
+            let button_a_str = w[0];
+            let button_b_str = w[1];
+            let prize_str = w[2];
+
+            let (a_x, a_y) = button_a_str[10..].split_once(", ").unwrap();
+            let a_x = a_x[2..].parse::<i64>().unwrap();
+            let a_y = a_y[2..].parse::<i64>().unwrap();
+
+            let (b_x, b_y) = button_b_str[10..].split_once(", ").unwrap();
+            let b_x = b_x[2..].parse::<i64>().unwrap();
+            let b_y = b_y[2..].parse::<i64>().unwrap();
+
+            let (prize_x, prize_y) = prize_str[7..].split_once(", ").unwrap();
+            let prize_x = prize_x[2..].parse::<i64>().unwrap();
+            let prize_y = prize_y[2..].parse::<i64>().unwrap();
+
+            let machine = ClawMachine::new((a_x, a_y), (b_x, b_y), (prize_x, prize_y));
+            ret.push(machine);
+        }
+
+        ret
+    }
+    pub fn part1(input: &str) -> i64 {
+        let machines = Self::parse_input(input);
+        machines
+            .iter()
+            .filter_map(|machine| machine.min_cost_to_win())
+            .sum()
+    }
 }
 
-impl Machine {
-    pub fn new(button_a: (i32, i32), button_b: (i32, i32), prize: (i32, i32)) -> Self {
+#[derive(Debug, Clone)]
+struct ClawMachine {
+    button_a: (i64, i64),
+    button_b: (i64, i64),
+    prize: (i64, i64),
+}
+
+impl ClawMachine {
+    pub fn new(button_a: (i64, i64), button_b: (i64, i64), prize: (i64, i64)) -> Self {
         Self {
             button_a,
             button_b,
             prize,
         }
     }
-}
 
-impl Solution {
+    pub fn min_cost_to_win(&self) -> Option<i64> {
+        let (ax, ay) = self.button_a;
+        let (bx, by) = self.button_b;
+        let (px, py) = self.prize;
 
-    pub fn part1(input: &str) -> {
-        let machines = Self::parse_input(input);
-        for machine in machines {
-        }
-    }
-    pub fn parse_input(
-        input: &str,
-    ) -> Vec<Machine> {
-        let mut lines = input.lines().collect::<Vec<_>>();
-        let mut machines = vec![];
-        for chunk in lines.windows(4) {
-            let button_a_str = chunk[0];
-            let button_b_str = chunk[1];
-            let prize_str = chunk[2];
-            let mut button_a = None;
-            let mut button_b = None;
-            let mut prize = None;
+        let determinant = ax * by - bx * ay;
 
-            for (i, button_str) in chunk[0..2].iter().enumerate() {
-                let x_idx = button_str.find("X").unwrap();
-                let y_idx = button_str.find("Y").unwrap();
-                let x = button_str[x_idx + 2..y_idx - 2].parse::<i32>().unwrap()
-                    * if button_str.as_bytes()[x_idx + 1] == b'-' {
-                        -1
-                    } else {
-                        1
-                    };
-                let y = button_str[y_idx + 2..].trim().parse::<i32>().unwrap()
-                    * if button_str.as_bytes()[y_idx + 1] == b'-' {
-                        -1
-                    } else {
-                        1
-                    };
-                let res = (x, y);
-                if i == 0 {
-                    button_a = Some(res);
-                } else {
-                    button_b = Some(res);
-                }
-            }
-            let comma_idx = prize_str.find(",").unwrap();
-            let x = prize_str[9..comma_idx].parse::<i32>().unwrap();
-            let y = prize_str[comma_idx + 4..].parse::<i32>().unwrap();
-            prize = Some((x, y));
-            let machine = Machine::new(button_a.unwrap(), button_b.unwrap(), prize.unwrap());
-            machines.push(machine);
+        if determinant == 0 {
+            return None; // The buttons are collinear, no unique solution
         }
 
-        machines
+        let a_presses = px * by - py * bx;
+        let b_presses = ax * py - ay * px;
+
+        if a_presses % determinant != 0 || b_presses % determinant != 0 {
+            return None; // No integer solution
+        }
+
+        let a = a_presses / determinant;
+        let b = b_presses / determinant;
+
+        if a >= 0 && b >= 0 && a <= 100 && b <= 100 {
+            Some(a * 3 + b)
+        } else {
+            None
+        }
     }
 }
-
-// a*x + b*y = c
-// 3x + y = cost
