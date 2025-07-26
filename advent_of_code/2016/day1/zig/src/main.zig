@@ -2,6 +2,17 @@ const std = @import("std");
 
 const Instruction = struct { direction: u8, distance: i32 };
 
+const Point = struct { x: i32, y: i32 };
+
+const Increment = struct {
+    ptr: *i32,
+    parity: i8,
+
+    fn init(ptr: *i32, parity: i8) Increment {
+        return Increment{ .ptr = ptr, .parity = parity };
+    }
+};
+
 fn parse_input(allocator: std.mem.Allocator, input: []const u8) ![]const Instruction {
     var i: usize = 0;
     var result = std.ArrayList(Instruction).init(allocator);
@@ -35,29 +46,68 @@ fn part1(sample: []const u8) !i32 {
     const instructions = try parse_input(allocator, sample);
     defer allocator.free(instructions);
 
-    var x: i32 = 0;
-    var y: i32 = 0;
+    var pos = Point{ .x = 0, .y = 0 };
 
-    const directions = [_]u8{ 'N', 'E', 'S', 'W' };
     var current_direction: usize = 0;
 
     for (instructions) |instruction| {
         current_direction = switch (instruction.direction) {
-            'R' => (current_direction + 1) % directions.len,
-            'L' => (current_direction + directions.len - 1) % directions.len,
+            'R' => (current_direction + 1) % 4,
+            'L' => (current_direction + 3) % 4,
             else => current_direction,
         };
 
-        switch (directions[current_direction]) {
-            'N' => y += instruction.distance,
-            'E' => x += instruction.distance,
-            'S' => y -= instruction.distance,
-            'W' => x -= instruction.distance,
+        switch (current_direction) {
+            0 => pos.y += instruction.distance,
+            1 => pos.x += instruction.distance,
+            2 => pos.y -= instruction.distance,
+            3 => pos.x -= instruction.distance,
             else => unreachable,
         }
     }
 
-    return @intCast(@abs(x) + @abs(y));
+    return @intCast(@abs(pos.x) + @abs(pos.y));
+}
+
+fn part2(sample: []const u8) !i32 {
+    const allocator = std.heap.page_allocator;
+    const instructions = try parse_input(allocator, sample);
+    defer allocator.free(instructions);
+
+    var pos = Point{ .x = 0, .y = 0 };
+    var map = std.AutoHashMap(Point, bool).init(allocator);
+    defer map.deinit();
+
+    var current_direction: usize = 0;
+
+    for (instructions) |inst| {
+        current_direction = switch (inst.direction) {
+            'L' => (current_direction + 3) % 4,
+            'R' => (current_direction + 1) % 4,
+            else => unreachable,
+        };
+
+        const distance: usize = @intCast(inst.distance);
+
+        const incr: Increment = switch (current_direction) {
+            0 => Increment.init(&pos.y, 1),
+            1 => Increment.init(&pos.x, 1),
+            2 => Increment.init(&pos.y, -1),
+            3 => Increment.init(&pos.x, -1),
+            else => unreachable,
+        };
+
+        for (0..distance) |_| {
+            const key = Point{ .x = pos.x, .y = pos.y };
+            if (map.contains(key)) {
+                return @intCast(@abs(pos.x) + @abs(pos.y));
+            }
+            try map.put(key, true);
+            incr.ptr.* += incr.parity;
+        }
+    }
+
+    unreachable;
 }
 
 pub fn main() !void {
@@ -69,6 +119,9 @@ pub fn main() !void {
 
     const len = try reader.read(&buf);
 
-    const answer = try part1(buf[0 .. len - 1]);
-    std.debug.print("{d}\n", .{answer});
+    const answer1 = try part1(buf[0 .. len - 1]);
+    std.debug.print("Part 1: {d}\n", .{answer1});
+
+    const answer2 = try part2(buf[0 .. len - 1]);
+    std.debug.print("Part 2: {d}\n", .{answer2});
 }
